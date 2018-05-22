@@ -375,8 +375,15 @@ func (a *API) createImage(params *ec2.RegisterImageInput) (string, error) {
 	res, err := a.ec2.RegisterImage(params)
 
 	if err == nil {
+		err := a.CreateTags([]string{*res.ImageId}, map[string]string{
+			"Name": *params.Name,
+		})
+		if err != nil {
+			return "", fmt.Errorf("couldn't tag image name: %v", err)
+		}
 		return *res.ImageId, nil
 	}
+
 	if awserr, ok := err.(awserr.Error); ok && awserr.Code() == "InvalidAMIName.Duplicate" {
 		// The AMI already exists. Get its ID. Due to races, this
 		// may take several attempts.
